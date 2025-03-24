@@ -1,3 +1,4 @@
+import UserInput from "@/components/ui/deep-research/UserInput";
 import Image from "next/image";
 
 export default function Home() {
@@ -11,7 +12,7 @@ export default function Home() {
             Enter a topic and answer a few questions to generate a research report.
           </p>
         </div>
-        
+        <UserInput />
       </main>
   );
 }
