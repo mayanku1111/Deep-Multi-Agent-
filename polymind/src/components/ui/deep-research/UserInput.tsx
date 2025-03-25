@@ -7,13 +7,12 @@ import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { json } from 'stream/consumers';
 
 const formSchema = z.object({
   input : z.string().min(2).max(200),
@@ -27,10 +26,18 @@ const UserInput = () => {
       input : "",
     },
   })
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    
-    console.log(values)
+async function onSubmit(values: z.infer<typeof formSchema>) {
+    try{
+        const response = await fetch("/api/generate-questions", {
+            method: "POST",
+            body : JSON.stringify({topic : values.input}),
+        })
+        const data = await response.json();
+        console.log(response);
+  }catch(error){
+      console.error(error);
   }
+}
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-row items-center justify-center gap-4 w-[50vw]">
