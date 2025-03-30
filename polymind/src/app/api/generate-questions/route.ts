@@ -11,36 +11,15 @@ const openrouter = createOpenRouter({
 const clarifyResearchGoals = async (topic: string) => {
 
     const prompt = `
-You are an expert research assistant helping to refine a research topic. 
-
-RESEARCH TOPIC: <topic>${topic}</topic>
-
-TASK: Generate 2-3 essential clarifying questions clarifying questions to help narrow down the research scope. 
-
-Each question should:
-- Be open-ended rather than yes/no
-- Target a specific aspect that needs clarification
-- Help the researcher make concrete decisions about their approach
-
-Focus on questions that address:
-1. SCOPE & BOUNDARIES: Which specific aspects, time periods, geographical areas, or sub-topics should be included or excluded?
-2. PERSPECTIVE & APPROACH: Which methodological approaches, theoretical frameworks, or viewpoints should be prioritized?
-3. INTENDED OUTCOME: What's the ultimate purpose of this research? A recommendation, historical analysis, comparison, etc.?
-4. PRACTICAL APPLICATION: How will this research be applied, implemented, or utilized in real-world contexts?
-
-FORMAT YOUR RESPONSE AS:
-1. [First clarifying question]
-2. [Second clarifying question]
-3. [Third clarifying question]
-(etc.)
-
-Be thoughtful and specific - these questions will guide the entire research process.
-`
-
+    Given the research topic <topic>${topic}</topic>, generate2-4 clarifying questions to help narrow down the research scope. Focus on identifying:
+    - Specifi aspects of interest
+    - Required depth/complexity level
+    - Any particular perspective or excluded sources
+    `
 
     try{
         const { object } = await generateObject({
-            model: openrouter("meta-llama/llama-3.3-70b-instruct"),
+            model: openrouter("google/gemini-2.5-pro-exp-03-25:free"),
             prompt,
             schema: z.object({
                 questions: z.array(z.string())

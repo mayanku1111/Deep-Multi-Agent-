@@ -1,18 +1,43 @@
-import UserInput from "@/components/ui/deep-research/UserInput";
-import Image from "next/image";
+'use client'; // Add this at the top to mark as a Client Component
+
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the Three.js component with no SSR
+const ThreeBackground = dynamic(() => import('@/components/ui/polymind/ThreeBackground'), {
+  ssr: false,
+});
 
 export default function Home() {
   return (
-    
-      <main className="min-h-screen w-full flex flex-col items-center justify-start gap-8 py-16">
-
-        <div className="flex flex-col items-center gap-4">
-          <h1 className="text-8xl font-bold font-dancing-script italic bg-gradient-to-r from-gray-800 to-violet-800 bg-clip-text text-transparent drop-shadow-[0_4px_8px_rgba(30,64,175,0.3)] hover:drop-shadow-[0_8px_16px_rgba(76,29,149,0.5)] transition-all duration-300 tracking-tight">Research Agent</h1>
-          <p className="text-gray-600 text-center">
-            Enter a topic and answer a few questions to generate a research report.
-          </p>
+    <main className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden">
+      {/* Three.js Background */}
+      <div className="fixed top-0 left-0 w-full h-full -z-10">
+        <ThreeBackground />
+      </div>
+      
+      {/* Content */}
+      <div className="z-10 flex flex-col items-center gap-8">
+        <div className="text-blue-300 text-[5rem] md:text-[8rem] font-bold">
+          PolyMind
         </div>
-        <UserInput />
-      </main>
+        
+        <div className="text-blue-300 text-xl md:text-2xl mb-8">
+          Multi Agent Intelligence
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Link href="/login" className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-8 rounded-full flex items-center justify-center gap-2 transition-all">
+            <span className="material-icons">bolt</span>
+            Get Started
+          </Link>
+          
+          <Link href="/explore" className="border border-blue-500 text-blue-400 hover:bg-blue-900/30 py-3 px-8 rounded-full flex items-center justify-center gap-2 transition-all">
+            <span className="material-icons">language</span>
+            Explore Languages
+          </Link>
+        </div>
+      </div>
+    </main>
   );
 }
