@@ -1,10 +1,10 @@
 export interface CulturalSource {
   title: string;
-  description?: string;
+  description: string;
   image?: string;
   url?: string;
   origin?: string; // e.g., "chromadb", "web"
-  similarity?: number;
+  similarity: number;
 }
 
 export interface Message {
