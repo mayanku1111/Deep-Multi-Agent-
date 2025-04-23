@@ -11,15 +11,15 @@ const openrouter = createOpenRouter({
 const clarifyResearchGoals = async (topic: string) => {
 
     const prompt = `
-    Given the research topic <topic>${topic}</topic>, generate2-4 clarifying questions to help narrow down the research scope. Focus on identifying:
-    - Specifi aspects of interest
+    Given the research topic <topic>${topic}</topic>, generate 3 clarifying questions to help narrow down the research scope. Focus on identifying:
+    - Specific aspects of interest
     - Required depth/complexity level
     - Any particular perspective or excluded sources
     `
 
     try{
         const { object } = await generateObject({
-            model: openrouter("google/gemini-2.5-pro-exp-03-25:free"),
+            model: openrouter("openai/gpt-4o-mini"),
             prompt,
             schema: z.object({
                 questions: z.array(z.string())
@@ -29,7 +29,9 @@ const clarifyResearchGoals = async (topic: string) => {
           return object.questions;
     }catch(error){
     console.log("Error while generating questions: ", error)
-
+    return ["What specific aspects of this topic interest you?", 
+            "What level of detail do you need?", 
+            "Are there any specific sources you'd like to focus on?"];
     }
 }
 
@@ -43,6 +45,13 @@ export async function POST(req: Request){
            const questions = await clarifyResearchGoals(topic);
            console.log("Questions: ", questions)
 
+           if (!questions) {
+             return NextResponse.json({
+               success: false, 
+               error: "Failed to generate questions"
+             }, {status: 500});
+           }
+
            return NextResponse.json(questions)
     }catch(error){
 
@@ -52,7 +61,4 @@ export async function POST(req: Request){
         }, {status: 500})
 
     }
-
-
-   
 }

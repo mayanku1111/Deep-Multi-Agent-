@@ -20,6 +20,22 @@ const ResearchReport = () => {
   const { report, isCompleted, isLoading, topic } = useDeepResearchStore();
 
   const handleMarkdownDownload = () => {
+    if (!report || !report.includes("<report>") || !report.includes("</report>")) {
+      // If report doesn't have the expected format, download whatever is available
+      const content = report || "No report available";
+      const blob = new Blob([content], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${topic}-research-report.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return;
+    }
+    
+    // If report has the expected format, extract the content between tags
     const content = report.split("<report>")[1].split("</report>")[0];
     const blob = new Blob([content], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
@@ -34,7 +50,7 @@ const ResearchReport = () => {
 
   if (!isCompleted) return null;
 
-  if (report.length <= 0 && isLoading) {
+  if (isLoading && (!report || report.length <= 0)) {
     return (
       <Card className="p-4 max-w-[50vw] bg-white/60 border px-4 py-2 rounded-xl">
         <div className="flex flex-col items-center justify-center space-y-4 p-8">
@@ -47,7 +63,7 @@ const ResearchReport = () => {
     );
   }
 
-  if (report.length <= 0) return null;
+  if (!report || report.length <= 0) return null;
 
   return (
     <Card
@@ -92,7 +108,9 @@ const ResearchReport = () => {
             },
           }}
         >
-          {report.split("<report>")[1].split("</report>")[0]}
+          {report && report.includes("<report>") && report.includes("</report>")
+            ? report.split("<report>")[1].split("</report>")[0]
+            : report || "No report available yet."}
         </Markdown>
       </div>
     </Card>

@@ -7,9 +7,9 @@ export const RETRY_DELAY_MS = 1000; // It is the delay in milliseconds between r
 
 // Model names
 export const MODELS = {
-  PLANNING: "openai/gpt-4o",
-  EXTRACTION: "openai/gpt-4o-mini",
-  ANALYSIS: "openai/gpt-4o",
-  REPORT: "google/gemini-2.0-flash-thinking-exp:free"
+  PLANNING: "openai/gpt-4o-mini",
+  EXTRACTION: "meta-llama/llama-4-maverick:free",
+  ANALYSIS: "meta-llama/llama-4-maverick:free",
+  REPORT: "meta-llama/llama-4-maverick:free"
   // REPORT: "anthropic/claude-3.7-sonnet:thinking",
 }; 
