@@ -122,7 +122,10 @@ export default function CulturalPage() {
                 : 'bg-purple-600/30 mr-auto'
             } backdrop-blur-md p-4 rounded-lg max-w-[80%] border border-white/10`}
           >
-            <div className="text-white mb-2">{message.content}</div>
+            <div 
+              className="text-white mb-2"
+              dangerouslySetInnerHTML={{ __html: message.content }}
+            />
             
             {/* Sources/Images Section */}
             {message.sources && message.sources.length > 0 && (

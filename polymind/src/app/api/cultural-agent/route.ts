@@ -531,43 +531,68 @@ export async function POST(request: Request) {
     // Initialize sources array
     let culturalSources: CulturalSource[] = [];
     
-    // STEP 1: Search the web for relevant information
+    // STEP 1: Prioritize Unsplash for image retrieval
+    console.log("Searching for images via Unsplash...");
+    const cultures = extractCulturalKeywords(query);
+    const searchQueries = cultures.length > 0 
+      ? cultures.map(culture => `${culture} culture traditional heritage`)
+      : [`${query} culture history traditional`];
+    
+    if (process.env.UNSPLASH_ACCESS_KEY) {
+      for (const searchQuery of searchQueries) {
+        console.log(`Searching Unsplash for: ${searchQuery}`);
+        const unsplashResponse = await fetch(
+          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=3`,
+          {
+            headers: {
+              'Authorization': `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`
+            }
+          }
+        );
+        
+        if (unsplashResponse.ok) {
+          const unsplashData = await unsplashResponse.json();
+          
+          if (unsplashData.results && unsplashData.results.length > 0) {
+            unsplashData.results.forEach((photo: any) => {
+              culturalSources.push({
+                title: photo.description || photo.alt_description || `${searchQuery.split(' ')[0]} culture`,
+                description: `Photo by ${photo.user.name} on Unsplash`,
+                image: photo.urls.regular,
+                url: photo.links.html,
+                origin: "unsplash",
+                similarity: 1.0
+              });
+            });
+            
+            // If we have enough images after each culture, break early
+            if (culturalSources.length >= 6) break;
+          }
+        }
+      }
+      
+      console.log(`Found ${culturalSources.length} images from Unsplash`);
+    } else {
+      console.warn("Unsplash API key not available - using alternative image sources");
+    }
+    
+    // STEP 2: Search the web for relevant information
     console.log("Searching web for information...");
     const webResults = await searchWeb(query);
     const webContext = webResults.content;
     
-    // Add any image sources from web results
-    if (webResults.sources.length > 0) {
-      culturalSources = [...webResults.sources];
-      console.log(`Found ${webResults.sources.length} images from web search`);
-    }
-    
-    // STEP 2: If we need more images, search specifically for images
-    if (culturalSources.length < 2) {
-      console.log("Searching for additional images...");
-      const imageResults = await searchImages(query);
+    // Add any image sources from web results ONLY if we don't have enough from Unsplash
+    if (culturalSources.length < 3 && webResults.sources.length > 0) {
+      // Filter to avoid duplicates
+      const existingUrls = new Set(culturalSources.map(s => s.image));
+      const newWebSources = webResults.sources.filter(source => !existingUrls.has(source.image));
       
-      // Add any new image sources
-      if (imageResults.length > 0) {
-        // Avoid duplicates by checking URLs
-        const existingUrls = new Set(culturalSources.map(s => s.image));
-        
-        for (const img of imageResults) {
-          if (!existingUrls.has(img.image)) {
-            culturalSources.push(img);
-            existingUrls.add(img.image);
-            
-            // Break if we have enough images
-            if (culturalSources.length >= 3) break;
-          }
-        }
-        
-        console.log(`Added ${culturalSources.length} images from image search`);
-      }
+      culturalSources = [...culturalSources, ...newWebSources.slice(0, 3)];
+      console.log(`Added ${newWebSources.length} images from web search`);
     }
     
-    // STEP 3: Try to get images from ChromaDB if we still need more
-    if (culturalSources.length < 2) {
+    // STEP 3: If we still need more images, try ChromaDB
+    if (culturalSources.length < 3) {
       console.log("Trying ChromaDB for images...");
       const chromaImages = await getRelevantImagesFromChromaDB(query);
       
@@ -575,22 +600,63 @@ export async function POST(request: Request) {
       if (chromaImages.length > 0) {
         // Avoid duplicates
         const existingUrls = new Set(culturalSources.map(s => s.image));
+        const newChromaImages = chromaImages.filter(img => !existingUrls.has(img.image));
         
-        for (const img of chromaImages) {
-          if (!existingUrls.has(img.image)) {
-            culturalSources.push(img);
-            existingUrls.add(img.image);
-            
-            // Break if we have enough images
-            if (culturalSources.length >= 3) break;
-          }
-        }
-        
-        console.log(`Added images from ChromaDB, now have ${culturalSources.length} total`);
+        culturalSources = [...culturalSources, ...newChromaImages.slice(0, 3)];
+        console.log(`Added ${newChromaImages.length} images from ChromaDB`);
       }
     }
     
-    // STEP 4: Use backup images if we still don't have any
+    // STEP 4: Fallback to Exa API only if Unsplash failed or isn't available
+    if (culturalSources.length < 2 && process.env.EXA_API_KEY) {
+      console.log("Falling back to Exa API for images...");
+      
+      // Use each cultural keyword for targeted search
+      for (const searchQuery of searchQueries) {
+        const exaImageSearch = await fetch('https://api.exa.ai/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.EXA_API_KEY
+          },
+          body: JSON.stringify({
+            query: `${searchQuery} high quality images photos`,
+            numResults: 3,
+            useAutoprompt: true,
+            type: "keyword",
+            imageSearch: true
+          })
+        });
+        
+        if (exaImageSearch.ok) {
+          const imageData = await exaImageSearch.json();
+          
+          if (imageData && imageData.results) {
+            // Filter to avoid duplicates
+            const existingUrls = new Set(culturalSources.map(s => s.image));
+            
+            for (const result of imageData.results) {
+              if (result.imageUrl && !existingUrls.has(result.imageUrl)) {
+                culturalSources.push({
+                  title: result.title || `${searchQuery.split(' ')[0]} culture`,
+                  description: result.url || "Found via web search",
+                  image: result.imageUrl,
+                  url: result.url,
+                  origin: "web",
+                  similarity: 1.0
+                });
+                existingUrls.add(result.imageUrl);
+              }
+            }
+            
+            // If we have enough images, stop searching
+            if (culturalSources.length >= 4) break;
+          }
+        }
+      }
+    }
+    
+    // STEP 5: Use backup images if we still don't have any
     if (culturalSources.length === 0) {
       console.log("Using backup mock images as all retrievals failed");
       let selectedImageIndex = -1;
@@ -622,7 +688,7 @@ export async function POST(request: Request) {
       }
     }
     
-    // STEP 5: Get response from OpenRouter LLM with web search context
+    // STEP 6: Get response from OpenRouter LLM with web search context
     console.log("Getting LLM response with context...");
     let responseText = await getOpenRouterResponse(query, history, webContext);
     
