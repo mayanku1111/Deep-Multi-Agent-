@@ -239,70 +239,9 @@ async function searchWeb(query: string): Promise<{ content: string, sources: Cul
 
 // Try to retrieve images from ChromaDB if it exists
 async function getRelevantImagesFromChromaDB(query: string, maxResults = 3): Promise<CulturalSource[]> {
-  try {
-    // Import ChromaDB dynamically to avoid breaking the app if not installed
-    let ChromaClient;
-    try {
-      // This will gracefully fail if chromadb isn't installed
-      ChromaClient = (await import('chromadb')).ChromaClient;
-    } catch (error: any) {
-      console.warn('ChromaDB not available:', error.message);
-      return [];
-    }
-    
-    // Check if ChromaDB directory exists
-    const chromaDBPath = process.env.CHROMA_DB_PATH || './chroma_db';
-    if (!fs.existsSync(chromaDBPath)) {
-      console.warn(`ChromaDB directory not found at ${chromaDBPath}`);
-      return [];
-    }
-    
-    // Initialize ChromaDB client
-    const client = new ChromaClient({ path: chromaDBPath });
-    
-    // Try to get the collection
-    try {
-      // Note: We're bypassing TypeScript's checking here because the ChromaDB
-      // API might have changed between versions
-      // @ts-ignore: ChromaDB version differences
-      const collection = await client.getCollection({ name: "cultural_images" });
-      
-      // Directly query the collection without embedding the query
-      // This is a simplified approach since we don't have the embedding model
-      // @ts-ignore: ChromaDB version differences
-      const results = await collection.query({
-        nResults: maxResults,
-        queryTexts: [query]
-      });
-      
-      // Format results
-      if (results && results.ids && results.ids[0]) {
-        const formattedResults: CulturalSource[] = [];
-        
-        for (let i = 0; i < results.ids[0].length; i++) {
-          const id = results.ids[0][i];
-          const metadata = results.metadatas?.[0]?.[i] || {};
-          
-          formattedResults.push({
-            title: String(metadata.title || `Cultural Image ${id}`),
-            description: String(metadata.description || 'Cultural concept'),
-            image: `/api/cultural-images/${id}`,
-            origin: 'chromadb',
-            similarity: Number(results.distances?.[0]?.[i] || 0)
-          });
-        }
-        
-        return formattedResults;
-      }
-    } catch (error: any) {
-      console.warn('Error querying ChromaDB collection:', error.message);
-    }
-    
-    return [];
-  } catch (error) {
-    console.error('Error accessing ChromaDB:', error);
-    return [];
-  }
+  // Temporarily disable ChromaDB until we can properly configure it
+  console.log('ChromaDB temporarily disabled');
+  return [];
 }
 
 // Search for images using Unsplash API or fallback to a web search for images
